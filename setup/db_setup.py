@@ -11,22 +11,28 @@ from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, BigInteger
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+
 Base = declarative_base()
+
+
+#Facts
     
-class RunStats(Base):
+class runStats(Base):
     __tablename__ = 'run_stats'
     id = Column(Integer, primary_key=True)
     from_date = Column(DateTime(), nullable=True)
     to_date = Column(DateTime(), nullable=False)
     run_time = Column(BigInteger, nullable=True)
 
-class Endpoint(Base):
+class endpoint(Base):
     __tablename__ = 'endpoints'
     id = Column(Integer, primary_key=True)
     endpoint_name = Column(String(25), nullable=False)
     endpoint_uri = Column(String(10), nullable=False)
     
-class Collections(Base):
+#Dimensions
+    
+class collections(Base):
     __tablename__ = 'collections'
     id = Column(Integer, primary_key=True)
     run_id = Column(Integer, ForeignKey('run_stats.id'), nullable=False)
@@ -35,30 +41,66 @@ class Collections(Base):
     package_count = Column(BigInteger, nullable=False)
     granule_count = Column(BigInteger, nullable=True)
 
-class Package(Base):
+class package(Base):
     __tablename__ = 'package'
     id = Column(Integer, primary_key=True)
     run_id = Column(Integer, ForeignKey('run_stats.id'), nullable=False)
-    collection_code = Column(String(100), nullable=False)
-    package_type = Column(String(10), nullable=False)
-    package_name = Column(String(100), nullable=False)
+    package_id = Column(String(50), nullable=False)
+    last_modified = Column(DateTime(), nullable=False)
     package_link = Column(String(100), nullable=False)
     doc_class = Column(String(20), nullable=True)
     title = Column(String(510), nullable = False)
     congress = Column(Integer, nullable=True)
-
-
-engine = create_engine('sqlite:///../GPOWarehouse.sqlite')
-
-Base.metadata.create_all(engine)
-Base.metadata.bind = engine
-DBSession = sessionmaker(engine)
-session = DBSession()
+    date_issued = Column(DateTime())
     
-base_runstat = RunStats(to_date = datetime.now())
+class packageSummary(Base):
+    __tablename__ = 'package_summary'
+    id = Column(Integer, primary_key=True)
+    run_id = Column(Integer, ForeignKey('run_stats.id'), nullable=False)
+    package_id = Column(String(50), ForeignKey(package.package_id), nullable=False)
+    title = Column(String(510), nullable = False)
+    collection_code = Column(String(10))
+    collection_name = Column(String(50))
+    category = Column(String(50))
+    date_issued = Column(DateTime())    
+    details_link = Column(String(100))
+    
+class committees(Base):
+    __tablename__ = 'committees'
+    id = Column(Integer, primary_key=True)
+    run_id = Column(Integer, ForeignKey('run_stats.id'), nullable=False) 
+    package_id = Column(String(50), ForeignKey(package.package_id), nullable=False)
+    chamber = Column(String(6))
+    committee_type = Column(String(6))
+    committee_name = Column(String(50))
+    
+class members(Base):
+    __tablename__ = 'members'
+    id = Column(Integer, primary_key=True)
+    run_id = Column(Integer, ForeignKey('run_stats.id'), nullable=False) 
+    package_id = Column(String(50), ForeignKey(package.package_id), nullable=False)
+    member_name = Column(String(50))
+    bioguide_id = Column(String(25))
+    chamber = Column(String(1))
+    party = Column(String(1))
+    role = Column(String(15))
+    state = Column(String(2))
+    congress = Column(Integer)
+    authority_id = Column(Integer)
+        
 
-session.add(base_runstat)
-session.commit()
-session.close()
+if __name__ == '__main__':
+    engine = create_engine('sqlite:///../GPOWarehouse.sqlite')
+    
+    Base.metadata.create_all(engine)
+    Base.metadata.bind = engine
+    DBSession = sessionmaker(engine)
+    session = DBSession()
+        
+    base_runstat = runStats(to_date = datetime.now())
+    
+    session.add(base_runstat)
+    session.commit()
+    session.close()
 
     
